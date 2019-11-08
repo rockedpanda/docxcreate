@@ -43,6 +43,7 @@
         
         请上传模板文件: <br/>
         <input v-model="file" ref="docFile" type="file" accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document" /><button @click="upload">{{uploading?'上传中...':'上传'}}</button><hr />
+        <div>模板语法参考文档:<a href="https://docxtemplater.com/demo/#simple">https://docxtemplater.com/demo/#simple</a></div>
         <ul><li v-for="(doc, i) in docs" v-key="i" :class="{active:doc.name==curTempl}" ><span v-if="doc.name==curTempl"> √  </span>{{doc.name}} <button  @click="selectThis(i)">选择此模板</button> <a :href="doc.url">下载模板</a></li></ul>
         <hr/>
         <textarea id="infos" v-model="infos"></textarea><br/>
@@ -55,7 +56,7 @@
  '   {',
  ' "clients": [',
  '   {',
- '     "first_name": "John",',
+ '     "first_name": "程",',
  '     "last_name": "Doe",',
  '     "phone": "+44546546454"',
  '   },',
@@ -66,7 +67,7 @@
  '   },',
 '	{',
  '     "first_name": "王",',
- '     "last_name": "海滨",',
+ '     "last_name": "panda",',
  '     "phone": "18612345678"',
  '   }',
  ' ],',
@@ -96,6 +97,7 @@
                     alert('请先选择模板');
                     return;
                 }
+                this.downloadUrl='';
                 fetch('/docx/create/'+this.curTempl, {
                     method:'POST',
                     body: this.infos,
