@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>docx生成</title>
+    <script src="/js/vue.min.js"></script>
+    <style>
+        #weixin{
+            position: fixed;
+            right: 5px;
+            top: 12px;
+            width: 180px;
+            padding: 5px;
+            box-shadow: 0 0 5px #000;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.95);
+            z-index: 1;
+        }
+        #weixin .arrow{
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: -10px;
+            right: 8px;
+            border: 0px solid red;
+            border-width: 0px 10px 10px 10px;
+            border-color: transparent transparent #AAA;
+        }
+        li.active{
+            background: #b9d7fc;
+        }
+        #infos{
+            width: 90%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>基于模板生成docx</h1>
+    <div id="main">
+        
+        请上传模板文件: <br/>
+        <input v-model="file" ref="docFile" type="file" accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document" /><button @click="upload">{{uploading?'上传中...':'上传'}}</button><hr />
+        <ul><li v-for="(doc, i) in docs" v-key="i" :class="{active:doc.name==curTempl}" ><span v-if="doc.name==curTempl"> √  </span>{{doc.name}} <button  @click="selectThis(i)">选择此模板</button> <a :href="doc.url">下载模板</a></li></ul>
+        <hr/>
+        <textarea id="infos" v-model="infos"></textarea><br/>
+        <button @click="create">生成</button>
+        <div v-if="downloadUrl">下载: <a target="_blank" :href="downloadUrl">{{downloadUrl}}</a></div>
+    </div>
+</body>
+<script>
+    var defaultData = [
+ '   {',
+ ' "clients": [',
+ '   {',
+ '     "first_name": "John",',
+ '     "last_name": "Doe",',
+ '     "phone": "+44546546454"',
+ '   },',
+ '   {',
+ '     "first_name": "Jane",',
+ '     "last_name": "Doe",',
+ '     "phone": "+445476454"',
+ '   },',
+'	{',
+ '     "first_name": "王",',
+ '     "last_name": "海滨",',
+ '     "phone": "18612345678"',
+ '   }',
+ ' ],',
+ ' "name":"老王"',
+'}'
+    ].join('\n');
+    var vm = new Vue({
+        el:'#main',
+        data: function(){
+            return {
+                docId: '',
+                file:'',
+                uploading: false,
+                isWeiXin: true,
+                infos:defaultData,
+                downloadUrl:'',
+                curTempl :'',
+                docs:[]
+            };
+        },
+        methods: {
+            selectThis:function(i){
+                this.curTempl = this.docs[i].name;
+            },
+            create:function(){
+                if(!this.curTempl){
+                    alert('请先选择模板');
+                    return;
+                }
+                fetch('/docx/create/'+this.curTempl, {
+                    method:'POST',
+                    body: this.infos,
+                    headers:{
+                        'Content-Type':'application/json'
+                    }
+                }).then(function(x){
+                    return x.json();
+                }).then(function(d){
+                    vm.downloadUrl = d.data;
+                }).catch(function(err){
+                    console.log(err);
+                    alert('发生错误');
+                });
+            },
+            upload: function(){
+                this.downloadUrl ='';
+                if(this.uploading){
+                    return alert('上传中，请稍侯');
+                }
+                var postfix = this.$refs.docFile.files[0].name.split('.').pop();
+                console.log(postfix);
+                var uploadReq = new Request('/docx/tmpl', { //url为服务器接口URL
+                    method: "PUT",
+                    body: this.$refs.docFile.files[0]
+                });
+                this.uploading = true;
+                console.log(uploadReq);
+                // return;
+                fetch(uploadReq).then(function(x){return x.text();}).then(function(x){
+                    console.log(x); //此处假定响应信息是text
+                    vm.uploading = false;
+                    alert('上传结束');
+                    vm.loadTemplateList();
+                }).catch(function(err){
+                    console.log(err);
+                    vm.uploading = false;
+                    alert('上传失败');
+                });
+            },
+            loadTemplateList: function(){
+                var that = this;
+                fetch('/tmpl/all.json').then(function(x){
+                    return x.json();
+                }).then(function(d){
+                    that.docs = Object.keys(d).map(function(i){
+                        return {name: i, url: '/tmpl/'+i+'.docx'};
+                    });
+                });
+            }
+        },
+        mounted:function() {
+            if(navigator.userAgent.indexOf('MicroMessenger')!==-1){ // && navigator.userAgent.indexOf('QQ') !==-1
+                this.isWeiXin = true;
+            }else{
+                this.isWeiXin = false;
+            }
+            this.loadTemplateList();
+        },
+    });
+</script>
+</html>
