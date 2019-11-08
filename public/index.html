@@ -44,7 +44,9 @@
         请上传模板文件: <br/>
         <input v-model="file" ref="docFile" type="file" accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document" /><button @click="upload">{{uploading?'上传中...':'上传'}}</button><hr />
         <div>模板语法参考文档:<a href="https://docxtemplater.com/demo/#simple">https://docxtemplater.com/demo/#simple</a></div>
-        <ul><li v-for="(doc, i) in docs" v-key="i" :class="{active:doc.name==curTempl}" ><span v-if="doc.name==curTempl"> √  </span>{{doc.name}} <button  @click="selectThis(i)">选择此模板</button> <a :href="doc.url">下载模板</a></li></ul>
+        <ul><li v-for="(doc, i) in docs" v-key="i" :class="{active:doc.name==curTempl}" >
+            <span v-if="doc.name==curTempl"> √  </span>{{doc.name}} <button  @click="selectThis(i)">选择此模板</button> <a :href="doc.url">下载模板</a> <button  @click="delTemplate(i)">删除</button>
+        </li></ul>
         <hr/>
         <textarea id="infos" v-model="infos"></textarea><br/>
         <button @click="create">生成</button>
@@ -91,6 +93,23 @@
         methods: {
             selectThis:function(i){
                 this.curTempl = this.docs[i].name;
+            },
+            delTemplate:function(i){
+                var name = this.docs[i].name;
+                var ans = window.confirm('确认删除模板 '+name+' 吗?');
+                if(ans){
+                    fetch('/docx/tmpl/'+name,{
+                        method:'DELETE'
+                    }).then(function(x){return x.json()}).then(function(d){
+                        console.log(d);
+                        if(d.error_code===0){
+                            //alert('删除成功');
+                            vm.loadTemplateList();
+                        }else{
+                            alert('删除失败');
+                        }
+                    })
+                }
             },
             create:function(){
                 if(!this.curTempl){

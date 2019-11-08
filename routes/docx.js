@@ -10,7 +10,7 @@ function getTmpPath(name){
     return path.resolve(__dirname,'../public/tmpl/', name);
 }
 
-/* put file and save as template */
+/* 上传一个docx作为模板,并返回模板id */
 router.put('/tmpl', function(req, res, next) {
     let name = uuid().replace(/-/g,'');
     let p = getTmpPath(name+'.docx');
@@ -23,6 +23,21 @@ router.put('/tmpl', function(req, res, next) {
     });
 });
 
+/** 根据一个模板id删除服务端的一个模板 */
+router.delete('/tmpl/:name', function(req, res, next){
+    let name = req.params.name;
+    if(docxTemplate.getTemplate(name)){
+        docxTemplate.delTemplate(name).then(function(){
+            res.send({error_code:0,msg:'模板移除成功',data: name});
+        }).catch(function(err){
+            console.log(err);
+            res.send({error_code:1,msg:'模板移除失败',data: name});
+        });
+    }else{
+        res.send({error_code:1,msg:'不存在该模板',data: name});
+    }
+})
+
 router.post('/create/:name', function(req, res, next){
     let name = req.params.name;
     let body = req.body; 
@@ -33,5 +48,7 @@ router.post('/create/:name', function(req, res, next){
         res.send({error_code:1, msg:'生成失败', data:null});
     }
 });
+
+
 
 module.exports = router;
